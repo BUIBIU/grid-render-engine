@@ -8,10 +8,10 @@ export default class GridRenderEngine {
     scale: 1
   }
   gridStyle = {
-    size: 10
+    size: 20
   }
   scaleStyle = {
-    width: 10
+    width: 20
   }
   mouse = {
     moveOrigin: null,
@@ -107,20 +107,25 @@ export default class GridRenderEngine {
     const reallMaxX = posX + reallWidth
     const reallMaxY = posY + reallHeight
 
-    const firstGridPosX = ((posX / gridSize) | 0) * gridSize
-    const firstGridPosY = ((posY / gridSize) | 0) * gridSize
+    const gridPosX = Math.floor(posX / gridSize)
+    const gridPosY = Math.floor(posY / gridSize)
+
+    const firstGridPosX = (gridPosX + 1) * gridSize
+    const firstGridPosY = (gridPosY + 1) * gridSize
     gridCtx.strokeStyle = 'rgb(0,0,0)'
     gridCtx.lineWidth = 1
     for (let i = firstGridPosX; i < reallMaxX; i += gridSize) {
+      const x = (i - posX) / scale
       gridCtx.beginPath()
-      gridCtx.moveTo((i - posX) / scale, 0)
-      gridCtx.lineTo((i - posX) / scale, height)
+      gridCtx.moveTo(x, 0)
+      gridCtx.lineTo(x, height)
       gridCtx.stroke()
     }
     for (let i = firstGridPosY; i < reallMaxY; i += gridSize) {
+      const y = (i - posY) / scale
       gridCtx.beginPath()
-      gridCtx.moveTo(0, (i - posY) / scale)
-      gridCtx.lineTo(width, (i - posY) / scale)
+      gridCtx.moveTo(0, y)
+      gridCtx.lineTo(width, y)
       gridCtx.stroke()
     }
     const userCtx = this.userCanvas.getContext('2d')
