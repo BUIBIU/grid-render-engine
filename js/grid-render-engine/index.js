@@ -1,18 +1,25 @@
 import Vector2 from './vector2.js'
 export default class GridRenderEngine {
+  //输出canvas
   userCanvas = null
+  //网格的canvas
   gridCanvas = null
+  //坐标标尺的canvas
   scaleCanvas = null
+  //视窗参数
   camera = {
     pos: new Vector2(0, 0),
     scale: 1
   }
+  //网格样式
   gridStyle = {
     size: 20
   }
+  //坐标标尺样式
   scaleStyle = {
     width: 20
   }
+  //鼠标事件属性
   mouse = {
     moveOrigin: null,
     cameraOrigin: null,
@@ -28,6 +35,7 @@ export default class GridRenderEngine {
     this.addMouseEvent()
     // this.addTouchEvent()
   }
+  //添加鼠标事件
   addMouseEvent() {
     if (!this.userCanvas) {
       return
@@ -59,6 +67,7 @@ export default class GridRenderEngine {
       // console.log(e)
     })
   }
+  //添加触摸事件
   addTouchEvent() {
     if (!this.userCanvas) {
       return
@@ -82,17 +91,21 @@ export default class GridRenderEngine {
       }
     })
   }
+  //初始化canvas大小参数
   initCanvasSetting() {
-    const clientWidth = this.userCanvas.clientWidth
-    const clientHeight = this.userCanvas.clientHeight
-    this.userCanvas.width = clientWidth
-    this.userCanvas.height = clientHeight
-    const userCanvasWidth = clientWidth
-    const userCanvasHeight = clientHeight
+    const userCanvasWidth = this.userCanvas.clientWidth
+    const userCanvasHeight = this.userCanvas.clientHeight
+
+    this.userCanvas.width = userCanvasWidth
+    this.userCanvas.height = userCanvasHeight
+
     const gridCanvasWidth = userCanvasWidth - this.scaleStyle.width * 2
     const gridCanvasHeight = userCanvasHeight - this.scaleStyle.width * 2
     this.gridCanvas.width = gridCanvasWidth
     this.gridCanvas.height = gridCanvasHeight
+
+    this.scaleCanvas.width = userCanvasWidth
+    this.scaleCanvas.height = userCanvasHeight
   }
   drawGrid() {
     this.initCanvasSetting()
@@ -107,22 +120,43 @@ export default class GridRenderEngine {
     const reallMaxX = posX + reallWidth
     const reallMaxY = posY + reallHeight
 
-    const gridPosX = Math.floor(posX / gridSize)
-    const gridPosY = Math.floor(posY / gridSize)
+    const gridIndexX = Math.floor(posX / gridSize)
+    const gridIndexY = Math.floor(posY / gridSize)
 
-    const firstGridPosX = (gridPosX + 1) * gridSize
-    const firstGridPosY = (gridPosY + 1) * gridSize
+    const firstGridPosX = gridIndexX * gridSize - posX
+    const firstGridPosY = gridIndexY * gridSize - posY
+
+    const gridCountX = ((reallWidth / gridSize) | 0) + 2
+    const gridCountY = ((reallHeight / gridSize) | 0) + 2
+
     gridCtx.strokeStyle = 'rgb(0,0,0)'
     gridCtx.lineWidth = 1
-    for (let i = firstGridPosX; i < reallMaxX; i += gridSize) {
-      const x = (i - posX) / scale
+    for (let i = 0; i < gridCountX; i++) {
+      const x = (firstGridPosX + i * gridSize) / scale
+      const lineIndex = gridIndexX + i
+      if (lineIndex % 10 == 0) {
+        gridCtx.strokeStyle = 'rgb(255,0,0)'
+        gridCtx.lineWidth = 3
+      } else {
+        gridCtx.strokeStyle = 'rgb(0,0,0)'
+        gridCtx.lineWidth = 1
+      }
+
       gridCtx.beginPath()
       gridCtx.moveTo(x, 0)
       gridCtx.lineTo(x, height)
       gridCtx.stroke()
     }
-    for (let i = firstGridPosY; i < reallMaxY; i += gridSize) {
-      const y = (i - posY) / scale
+    for (let i = 0; i < gridCountY; i++) {
+      const y = (firstGridPosY + i * gridSize) / scale
+      const lineIndex = gridIndexY + i
+      if (lineIndex % 10 == 0) {
+        gridCtx.strokeStyle = 'rgb(255,0,0)'
+        gridCtx.lineWidth = 3
+      } else {
+        gridCtx.strokeStyle = 'rgb(0,0,0)'
+        gridCtx.lineWidth = 1
+      }
       gridCtx.beginPath()
       gridCtx.moveTo(0, y)
       gridCtx.lineTo(width, y)
