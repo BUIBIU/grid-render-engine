@@ -9,7 +9,9 @@ export default class GridRenderEngine {
   //视窗参数
   camera = {
     pos: new Vector2(0, 0),
-    scale: 1
+    scale: 1,
+    targetScale: 1,
+    inertia: true,
   }
   //网格样式
   gridStyle = {
@@ -21,10 +23,13 @@ export default class GridRenderEngine {
   }
   //鼠标事件属性
   mouse = {
+    pos: null,
+    wheelPos: null,
     moveOrigin: null,
     cameraOrigin: null,
     moving: false
   }
+  lastTickTime = null
   constructor(userCanvas) {
     this.userCanvas = userCanvas
     this.init()
@@ -41,16 +46,22 @@ export default class GridRenderEngine {
       return
     }
     this.userCanvas.addEventListener('mousedown', (e) => {
-      // console.log(e)
+      this.mouse.pos = new Vector2(e.offsetX, e.offsetY)
+      this.mouse.move = new Vector2(0, 0)
       this.mouse.moveOrigin = new Vector2(e.offsetX, e.offsetY)
       this.mouse.cameraOrigin = this.camera.pos.clone()
       this.mouse.moving = true
     })
-    this.userCanvas.addEventListener('mouseup', () => {
+    this.userCanvas.addEventListener('mouseup', (e) => {
+      let pos = new Vector2(e.offsetX, e.offsetY)
+      this.mouse.pos = pos
       this.mouse.moving = false
     })
     this.userCanvas.addEventListener('mousemove', (e) => {
+
+      this.mouse.pos = new Vector2(e.offsetX, e.offsetY)
       if (this.mouse.moving) {
+        // this.mouse.move = (new Vector2(e.movementX, e.movementY)).mul(this.camera.scale, true)
         const curMousePos = new Vector2(e.offsetX, e.offsetY)
         const moveVec = curMousePos
           .sub(this.mouse.moveOrigin, true)
@@ -60,11 +71,9 @@ export default class GridRenderEngine {
     })
     this.userCanvas.addEventListener('wheel', (e) => {
       const sizeChange = Math.sign(e.deltaY) == 1 ? 1.1 : 1 / 1.1
-      // this.camera.scale += sizeChange
-      const mousePos = new Vector2(e.offsetX, e.offsetY)
-      const gridMousePos = this.getGridMousePos(mousePos)
-      this.cameraChangeScale(gridMousePos, this.camera.scale * sizeChange)
-      // console.log(e)
+      this.camera.targetScale *= sizeChange
+      this.mouse.pos = new Vector2(e.offsetX, e.offsetY)
+      this.mouse.wheelPos = new Vector2(e.offsetX, e.offsetY)
     })
   }
   //添加触摸事件
@@ -72,24 +81,26 @@ export default class GridRenderEngine {
     if (!this.userCanvas) {
       return
     }
-    this.userCanvas.addEventListener('touchstart', (e) => {
-      console.log(e)
-      this.mouse.moveOrigin = new Vector2(e.offsetX, e.offsetY)
-      this.mouse.cameraOrigin = this.camera.pos.clone()
-      this.mouse.moving = true
-    })
-    this.userCanvas.addEventListener('touchend', () => {
-      this.mouse.moving = false
-    })
-    this.userCanvas.addEventListener('touchmove', (e) => {
-      if (this.mouse.moving) {
-        const curMousePos = new Vector2(e.offsetX, e.offsetY)
-        const moveVec = curMousePos
-          .sub(this.mouse.moveOrigin, true)
-          .mul(this.camera.scale, true)
-        this.camera.pos = this.mouse.cameraOrigin.sub(moveVec, true)
-      }
-    })
+    // this.userCanvas.addEventListener('touchstart', (e) => {
+    //   this.mouse.pos = new Vector2(e.offsetX, e.offsetY)
+    //   this.mouse.moveOrigin = new Vector2(e.offsetX, e.offsetY)
+    //   this.mouse.cameraOrigin = this.camera.pos.clone()
+    //   this.mouse.moving = true
+    // })
+    // this.userCanvas.addEventListener('touchend', () => {
+    //   this.mouse.pos = new Vector2(e.offsetX, e.offsetY)
+    //   this.mouse.moving = false
+    // })
+    // this.userCanvas.addEventListener('touchmove', (e) => {
+    //   this.mouse.pos = new Vector2(e.offsetX, e.offsetY)
+    //   if (this.mouse.moving) {
+    //     const curMousePos = new Vector2(e.offsetX, e.offsetY)
+    //     const moveVec = curMousePos
+    //       .sub(this.mouse.moveOrigin, true)
+    //       .mul(this.camera.scale, true)
+    //     this.camera.pos = this.mouse.cameraOrigin.sub(moveVec, true)
+    //   }
+    // })
   }
   //初始化canvas大小参数
   initCanvasSetting() {
@@ -109,6 +120,7 @@ export default class GridRenderEngine {
   }
   drawGrid() {
     this.initCanvasSetting()
+    this.animation()
     const gridCtx = this.gridCanvas.getContext('2d')
     const { x: posX, y: posY } = this.camera.pos
     const { size: gridSize } = this.gridStyle
@@ -169,7 +181,7 @@ export default class GridRenderEngine {
       this.scaleStyle.width
     )
   }
-  drawScale() {}
+  drawScale() { }
   cameraChangeScale(mousePos, targetScale) {
     const worldPos = mousePos
       .mul(this.camera.scale, true)
@@ -186,4 +198,37 @@ export default class GridRenderEngine {
     const width = this.scaleStyle.width
     return pos.sub(new Vector2(width, width), true)
   }
+  animation() {
+    if (this.lastTickTime == null) {
+      this.lastTickTime = new Date()
+      return
+    }
+    let nowTime = new Date()
+    let tickTime = nowTime - this.lastTickTime
+    this.lastTickTime = nowTime
+    this.scaleChangeAnimation(tickTime)
+    // this.camInertiaMove(tickTime)
+  }
+  scaleChangeAnimation(tickTime) {
+    if (this.mouse.wheelPos) {
+      let { scale, targetScale } = this.camera
+      scale += (targetScale - scale) * (tickTime / 1000) * 10
+      // console.log(tickTime);
+      const gridMousePos = this.getGridMousePos(this.mouse.wheelPos)
+      this.cameraChangeScale(gridMousePos, scale)
+    }
+  }
+  // camInertiaMove(tickTime) {
+  //   let { moving, move } = this.mouse
+  //   if (!moving && move) {
+  //     this.camera.pos.sub(move)
+  //     let length = move.length()
+  //     if (length > 0) {
+  //       let drag = tickTime / 200 * this.camera.scale
+  //       drag = Math.min(length, drag)
+  //       move.sub(move.normalize(true).mul(drag, true))
+  //       this.mouse.move = move
+  //     }
+  //   }
+  // }
 }
