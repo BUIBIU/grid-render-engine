@@ -9,7 +9,7 @@ export default class GridRenderEngine {
   //视窗参数
   camera = {
     pos: new Vector2(0, 0),
-    scale: 1,
+    scale: 0.5,
     targetScale: 1,
     inertia: true,
   }
@@ -19,7 +19,7 @@ export default class GridRenderEngine {
   }
   //坐标标尺样式
   scaleStyle = {
-    width: 20
+    width: 40
   }
   //鼠标事件属性
   mouse = {
@@ -72,6 +72,9 @@ export default class GridRenderEngine {
     this.userCanvas.addEventListener('wheel', (e) => {
       const sizeChange = Math.sign(e.deltaY) == 1 ? 1.1 : 1 / 1.1
       this.camera.targetScale *= sizeChange
+      if (this.camera.targetScale > 1) {
+        this.camera.targetScale = 1
+      }
       this.mouse.pos = new Vector2(e.offsetX, e.offsetY)
       this.mouse.wheelPos = new Vector2(e.offsetX, e.offsetY)
     })
@@ -118,9 +121,13 @@ export default class GridRenderEngine {
     this.scaleCanvas.width = userCanvasWidth
     this.scaleCanvas.height = userCanvasHeight
   }
-  drawGrid() {
+  draw() {
     this.initCanvasSetting()
     this.animation()
+    this.drawScale()
+    this.drawGrid()
+  }
+  drawGrid() {
     const gridCtx = this.gridCanvas.getContext('2d')
     const { x: posX, y: posY } = this.camera.pos
     const { size: gridSize } = this.gridStyle
@@ -140,9 +147,32 @@ export default class GridRenderEngine {
 
     const gridCountX = ((reallWidth / gridSize) | 0) + 2
     const gridCountY = ((reallHeight / gridSize) | 0) + 2
+    gridCtx.fillStyle = "rgb(255,255,255)"
+    gridCtx.beginPath()
+    gridCtx.fillRect(0, 0, width, height);
 
     gridCtx.strokeStyle = 'rgb(0,0,0)'
     gridCtx.lineWidth = 1
+
+    // for (let y = 0; y < gridCountY; y++) {
+    //   for (let x = 0; x < gridCountX; x++) {
+    //     let gridPosX = gridIndexX + x
+    //     let gridPosY = gridIndexY + y
+    //     let gridReallPosX = (firstGridPosX + x * gridSize) / scale
+    //     let gridReallPosY = (firstGridPosY + y * gridSize) / scale
+
+    //     if((gridPosX+gridPosY)%2 == 0){
+    //       gridCtx.fillStyle='rgb(0,0,0)'
+    //     }else{
+    //       gridCtx.fillStyle='rgb(255,255,255)'
+    //     }
+
+    //     gridCtx.beginPath()
+    //     // gridCtx.fillText(`(${gridPosX},${gridPosY})`, gridReallPosX, gridReallPosY)
+    //     gridCtx.fillRect(gridReallPosX,gridReallPosY,gridSize/scale,gridSize/scale);
+    //   }
+    // }
+
     for (let i = 0; i < gridCountX; i++) {
       const x = (firstGridPosX + i * gridSize) / scale
       const lineIndex = gridIndexX + i
@@ -181,7 +211,10 @@ export default class GridRenderEngine {
       this.scaleStyle.width
     )
   }
-  drawScale() { }
+  drawScale() {
+   
+
+  }
   cameraChangeScale(mousePos, targetScale) {
     const worldPos = mousePos
       .mul(this.camera.scale, true)
